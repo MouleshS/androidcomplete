@@ -1,0 +1,74 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
+
+android {
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion "29.0.3"
+
+    defaultConfig {
+        minSdkVersion androidMinSdkVersion
+        targetSdkVersion androidTargetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            buildConfigField "String", "BASE_URL", "\"https://api.themoviedb.org/3/\""
+            buildConfigField "String", "API_KEY", "e7cdf468aece69ba2505ee840948ad62"
+        }
+        debug {
+            buildConfigField "String", "BASE_URL", "\"https://api.themoviedb.org/3/\""
+            buildConfigField "String", "API_KEY", "\"e7cdf468aece69ba2505ee840948ad62\""
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+}
+
+dependencies {
+    api fileTree(dir: "libs", include: ["*.jar"])
+
+    //core dependencies
+    api "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    api 'androidx.core:core-ktx:1.3.2'
+    api 'androidx.appcompat:appcompat:1.2.0'
+
+    //Dagger Hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$androidXHiltVersion"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+    kapt "androidx.hilt:hilt-compiler:$androidXHiltVersion"
+
+    //Lifecycle
+    api "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
+
+    //Navigation
+    api "androidx.navigation:navigation-fragment-ktx:$navigationVersion"
+    api "androidx.navigation:navigation-ui-ktx:$navigationVersion"
+
+    // Retrofit & Moshi
+    api "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    api "com.squareup.retrofit2:converter-moshi:$moshiVersion"
+    api "com.squareup.moshi:moshi-kotlin:$moshiKotlinVersion"
+
+
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+
+}
