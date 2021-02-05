@@ -441,16 +441,12 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
         }
         val updatedCharacteristic = characteristic
         //val hexo = "01010500".toByteArray(Charsets.UTF_8)
-        opCode.forEachIndexed { i,_ ->
             updatedCharacteristic?.value = opCode
             updatedCharacteristic?.writeType = mWriteType
 
             if (gatt.writeCharacteristic(updatedCharacteristic)) {
-                toastMsg("Property Written $i")
+                toastMsg("Property Written")
             }
-            Thread.sleep(10)
-        }
-
     }
 
     fun Int.toByteArray() = byteArrayOf(
