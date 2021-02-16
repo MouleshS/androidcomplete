@@ -25,8 +25,9 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.androidcomplete.detail.R
 import kotlinx.android.synthetic.main.detail_fragment.*
-import java.nio.charset.Charset
+import java.math.BigInteger
 import java.util.*
+import kotlin.experimental.and
 
 
 /**
@@ -35,70 +36,37 @@ import java.util.*
 
 
 /**
- * all bye services:
-Index: 0
-serviceId: 00001800-0000-1000-8000-00805f9b34fb
+ * Service: 00001800-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a00-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a01-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a04-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002aa6-0000-1000-8000-00805f9b34fb
 
-Characteristic
-00002a00-0000-1000-8000-00805f9b34fb
-00002a01-0000-1000-8000-00805f9b34fb
-00002a04-0000-1000-8000-00805f9b34fb
+Service: 00001801-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a05-0000-1000-8000-00805f9b34fb
+Service: 8102010	0-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020101-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020102-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020103-76df-11e7-b5a5-be2e44b06b34
 
-——————————————————————————————————————
-
-Index:1
-serviceId: 00001801-0000-1000-8000-00805f9b34fb
-
-Characteristic:
-00002a05-0000-1000-8000-00805f9b34fb
-
-—————————————————————————————————————-
-
-Index:2
-serviceId: 81020100-76df-11e7-b5a5-be2e44b06b34
-
-Char:
-81020101-76df-11e7-b5a5-be2e44b06b34
-81020102-76df-11e7-b5a5-be2e44b06b34
-81020100-76df-11e7-b5a5-be2e44b06b34
-
-——————————————————————————————————————
-
-Index:3
-
-Service: 81020800-76df-11e7-b5a5-be2e44b06b34
-
-Char:
-81020801-76df-11e7-b5a5-be2e44b06b34
-81020802-76df-11e7-b5a5-be2e44b06b34
-81020803-76df-11e7-b5a5-be2e44b06b34
-81020804-76df-11e7-b5a5-be2e44b06b34
-
-————————————————————————————————————
-
-Index: 4
+Service: 0000fd55-0000-1000-8000-00805f9b34fb
+Characteristic: 	81020801-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020802-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020803-76df-11e7-b5a5-be2e44b06b34
+Characteristic: 	81020804-76df-11e7-b5a5-be2e44b06b34
 
 Service: 0000180f-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a19-0000-1000-8000-00805f9b34fb
 
-Char:
-00002a19-0000-1000-8000-00805f9b34fb
-
-———————————————————————————————
-
-Index: 5
 Service: 0000180a-0000-1000-8000-00805f9b34fb
-
-Char:
-00002a29-0000-1000-8000-00805f9b34fb
-00002a24-0000-1000-8000-00805f9b34fb
-00002a25-0000-1000-8000-00805f9b34fb
-00002a27-0000-1000-8000-00805f9b34fb
-00002a26-0000-1000-8000-00805f9b34fb
-00002a28-0000-1000-8000-00805f9b34fb
-
-
- *
+Characteristic: 	00002a29-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a24-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a25-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a27-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a26-0000-1000-8000-00805f9b34fb
+Characteristic: 	00002a28-0000-1000-8000-00805f9b34fb
  */
+
 
 const val ACCESS_LOCATION_REQUEST = 101
 const val REQUEST_ENABLE_BT = 102
@@ -107,7 +75,7 @@ private const val GATT_MAX_MTU_SIZE = 517
 private val CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID =
     UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 private val VITAL_CHARATERISTIC_UUID = UUID.fromString("81020801-76df-11e7-b5a5-be2e44b06b34")
-private val BIOSENSOR_SERVICE_UUID = UUID.fromString("81020800-76df-11e7-b5a5-be2e44b06b34")
+private val BIOSENSOR_SERVICE_UUID = UUID.fromString("0000fd55-0000-1000-8000-00805f9b34fb")
 private val SessionCodeCharId = UUID.fromString("81020804-76df-11e7-b5a5-be2e44b06b34")
 private val StreamConfigCharId = UUID.fromString("81020802-76df-11e7-b5a5-be2e44b06b34")
 
@@ -144,7 +112,12 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> {
-                    readCharacteristic(gatt, BIOSENSOR_SERVICE_UUID, SessionCodeCharId)
+                    setCharacteristicNotification(
+                        gatt,
+                        BIOSENSOR_SERVICE_UUID,
+                        VITAL_CHARATERISTIC_UUID,
+                        true
+                    )
                 }
                 else -> Log.d(TAG_BLUETOOTH, "onServicesDiscovered received: $status")
             }
@@ -164,12 +137,19 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
             }
         }
 
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt?,
+            descriptor: BluetoothGattDescriptor?,
+            status: Int
+        ) {
+            super.onDescriptorWrite(gatt, descriptor, status)
+        }
+
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt?,
             characteristic: BluetoothGattCharacteristic?
         ) {
-            super.onCharacteristicChanged(gatt, characteristic)
-            toastMsg("onCharacteristicChanged")
+            characteristic?.let { parseCharacteristic(it) }
         }
 
         override fun onCharacteristicWrite(
@@ -206,6 +186,20 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
         return inflater.inflate(R.layout.detail_fragment, container, false)
     }
 
+    override fun onStop() {
+        super.onStop()
+        val stopPacket = Packet(
+            1, 2, 5, 0,
+            null, null, null
+        ).toByteArray()
+        writeCharacteristic(
+            bluetoothGatt,
+            BIOSENSOR_SERVICE_UUID,
+            StreamConfigCharId,
+            stopPacket
+        )
+    }
+
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -219,46 +213,42 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
         initSession.setOnClickListener {
             bluetoothGatt?.let {
                 val timeStamp = System.currentTimeMillis()
-                val hexTime = java.lang.Long.toHexString(timeStamp / 1000)
+                val seconds = timeStamp / 1000
 
                 val array = byteArrayOf(
                     0x01,
                     0x01,
                     0x05,
                     0x00,
+                    0x00,
+                    0x39,
+                    0x21,
                     0x60,
-                    0x1D,
-                    0x12,
-                    0x78
-//                    0x0D,
-//                    0x15,
-//                    0x5E,
-//                    0x5E,
-//                    0x3C,
-//                    0x00
+                    0x0D,
+                    0x15,
+                    0xEA.toByte(),
+                    0x5E,
+                    0x3C,
+                    0x00
                 )
+
+                val packetArray = Packet(
+                    1, 1, 5, 0,
+                    seconds, charArrayOf('M', 'O', 'U', 'L'), 60
+                ).toByteArray()
 
                 //val timeArray = hexTime.toByteArray(Charset.defaultCharset())
                 //val finalArray = array.plus(timeArray)
+                //val sampleSequence = "010105005FED14800D15EA5E3C00"
+                //val byteArray = decodeHexString(sampleSequence)
+
                 writeCharacteristic(
                     it,
                     BIOSENSOR_SERVICE_UUID,
                     StreamConfigCharId,
-                    array
-                )
-
-            }
-        }
-        readVitals.setOnClickListener {
-            bluetoothGatt?.let {
-                setCharacteristicNotification(
-                    it,
-                    BIOSENSOR_SERVICE_UUID,
-                    VITAL_CHARATERISTIC_UUID,
-                    true
+                    packetArray
                 )
             }
-
         }
 
         readStatus.setOnClickListener {
@@ -374,13 +364,11 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
     fun parseData(characteristic: BluetoothGattCharacteristic) {
         when (characteristic.uuid) {
             SessionCodeCharId -> {
-
                 when (characteristic.value.getOrNull(0)?.toInt()) {
                     0 -> toastMsg("Session is Uninitialised")
                     1 -> toastMsg("Session Configured")
                     2 -> toastMsg("Session Active")
                     3 -> toastMsg("Session Config Error")
-
                 }
             }
         }
@@ -419,34 +407,31 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
 
 
     fun readCharacteristic(
-        gatt: BluetoothGatt,
+        gatt: BluetoothGatt?,
         serviceId: UUID,
         charId: UUID
     ) {
-        val characteristic = gatt.getService(serviceId)?.getCharacteristic(charId)
-        gatt.readCharacteristic(characteristic)
+        val characteristic = gatt?.getService(serviceId)?.getCharacteristic(charId)
+        gatt?.readCharacteristic(characteristic)
     }
 
     fun writeCharacteristic(
-        gatt: BluetoothGatt,
+        gatt: BluetoothGatt?,
         serviceId: UUID,
         charId: UUID,
         opCode: ByteArray
     ) {
-        val characteristic = gatt.getService(serviceId)?.getCharacteristic(charId)
-        val mWriteType = if (characteristic?.properties?.and(PROPERTY_WRITE_NO_RESPONSE) !== 0) {
-            WRITE_TYPE_NO_RESPONSE
-        } else {
-            WRITE_TYPE_DEFAULT
-        }
-        val updatedCharacteristic = characteristic
-        //val hexo = "01010500".toByteArray(Charsets.UTF_8)
-            updatedCharacteristic?.value = opCode
-            updatedCharacteristic?.writeType = mWriteType
+        val characteristic = gatt?.getService(serviceId)?.getCharacteristic(charId)
 
-            if (gatt.writeCharacteristic(updatedCharacteristic)) {
-                toastMsg("Property Written")
-            }
+        val timeStamp = System.currentTimeMillis()
+        characteristic?.value = opCode
+
+//        val packet = Packet(1, 1, 5, 0, (timeStamp / 1000).toInt(), 219540062, 60)
+//        characteristic?.write(packet)
+        Log.d("written packate", characteristic?.value?.toHexString() ?: "")
+        if (characteristic != null && gatt?.writeCharacteristic(characteristic) == true) {
+            toastMsg("Property Written")
+        }
     }
 
     fun Int.toByteArray() = byteArrayOf(
@@ -455,4 +440,108 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
         (this ushr 16).toByte(),
         (this ushr 24).toByte()
     )
+
+    fun decodeHexString(hexString: String): ByteArray? {
+        require(hexString.length % 2 != 1) { "Invalid hexadecimal String supplied." }
+        val bytes = ByteArray(hexString.length / 2)
+        var i = 0
+        while (i < hexString.length) {
+            bytes[i / 2] = hexToByte(hexString.substring(i, i + 2))
+            i += 2
+        }
+        return bytes
+    }
+
+    fun hexToByte(hexString: String): Byte {
+        val firstDigit: Int = toDigit(hexString[0])
+        val secondDigit: Int = toDigit(hexString[1])
+        return ((firstDigit shl 4) + secondDigit).toByte()
+    }
+
+    private fun toDigit(hexChar: Char): Int {
+        val digit = Character.digit(hexChar, 16)
+        require(digit != -1) { "Invalid Hexadecimal Character: $hexChar" }
+        return digit
+    }
+
+    @ExperimentalUnsignedTypes
+    fun parseCharacteristic(characteristic: BluetoothGattCharacteristic) {
+        when (characteristic.uuid) {
+            VITAL_CHARATERISTIC_UUID -> {
+                if (characteristic.value.size == 20) {
+                    val tokenArray = Arrays.copyOfRange(characteristic.value, 4, 8)
+                    val epoch = Arrays.copyOfRange(characteristic.value, 8, 12)
+                    val heartRate = Arrays.copyOfRange(characteristic.value, 12, 14).reversedArray()
+                    val skinTemp = Arrays.copyOfRange(characteristic.value, 14, 16).reversedArray()
+                    val ambientTemp =
+                        Arrays.copyOfRange(characteristic.value, 16, 18).reversedArray()
+                    val ECG_LEAD_OFF = characteristic.value[2].and(0x01)
+
+                    Log.d(
+                        "Property",
+                        " \nPacketType: " + characteristic.value[0].toUInt()
+                                + " \nSequence Num: " + characteristic.value[1].toUInt()
+                                + " \nEvent: " + characteristic.value[2].toUInt()
+                                + " \nBattery: " + characteristic.value[3].toUInt()
+                                + " \nToken: " + tokenArray.toHexString()
+                                + " \nEpoch: " + epoch.toHexString()
+                                + " \nHeart_rate: " + BigInteger(heartRate).toInt()
+                                + " \nSkin_temp: " + BigInteger(skinTemp).toInt() / 10
+                                + " \nAmbient_temp: " + BigInteger(ambientTemp).toInt() / 10
+                                + " \nMotion: " + characteristic.value[18].toUInt()
+                                + " \nRespiratory rate: " + characteristic.value[19].toUInt()
+                                + "\nECG_LEAD_OFF" + ECG_LEAD_OFF
+                    )
+                }
+            }
+
+        }
+    }
+}
+
+data class Packet(
+    val opCode: Byte,
+    val sessionAction: Byte,
+    val runMode: Byte,
+    val reserved: Byte,
+    val sessionTime: Long?,
+    val token: CharArray?,
+    val interval: Int?
+) {
+    fun toByteArray(): ByteArray {
+        var byteArray = byteArrayOf(
+            opCode,
+            sessionAction,
+            runMode,
+            reserved
+        )
+        sessionTime?.let { byteArray = byteArray.plus(longToUInt32ByteArray(sessionTime)) }
+        if (token != null && token.size == 4 && interval != null) {
+            val tokeArray = ByteArray(4)
+            tokeArray[0] = token[0].toByte()
+            tokeArray[1] = token[1].toByte()
+            tokeArray[2] = token[2].toByte()
+            tokeArray[3] = token[3].toByte()
+            byteArray = byteArray.plus(tokeArray)
+            byteArray = byteArray.plus(intToUInt16ByteArray(interval))
+        }
+        return byteArray
+    }
+
+    private fun longToUInt32ByteArray(value: Long): ByteArray {
+
+        val bytes = ByteArray(4)
+        bytes[0] = (value and 0xFFFF).toByte()
+        bytes[1] = ((value ushr 8) and 0xFFFF).toByte()
+        bytes[2] = ((value ushr 16) and 0xFFFF).toByte()
+        bytes[3] = ((value ushr 24) and 0xFFFF).toByte()
+        return bytes
+    }
+
+    private fun intToUInt16ByteArray(value: Int): ByteArray {
+        val bytes = ByteArray(2)
+        bytes[1] = ((value ushr 8) and 0xFFFF).toByte()
+        bytes[0] = (value and 0xFFFF).toByte()
+        return bytes
+    }
 }

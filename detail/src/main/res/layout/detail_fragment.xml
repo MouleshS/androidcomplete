@@ -36,19 +36,6 @@
             android:text="Init Session"
             android:textColor="@android:color/white" />
 
-
-        <TextView
-            android:id="@+id/readVitals"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_margin="20dp"
-            android:layout_marginTop="40dp"
-            android:layout_weight="1"
-            android:background="@color/design_default_color_primary"
-            android:padding="10dp"
-            android:text="Read Vitals"
-            android:textColor="@android:color/white" />
     </LinearLayout>
 
     <TextView
