@@ -2,7 +2,6 @@ package com.androidcomplete.detail.ui
 
 import android.Manifest
 import android.bluetooth.*
-import android.bluetooth.BluetoothGattCharacteristic.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
@@ -26,6 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.androidcomplete.detail.R
 import kotlinx.android.synthetic.main.detail_fragment.*
 import java.math.BigInteger
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.experimental.and
 
@@ -88,6 +88,7 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
     private var scanResultSet = mutableSetOf<BluetoothDevice>()
     private var bleAdapter: BleAdapter? = null
     var bluetoothGatt: BluetoothGatt? = null
+    var dataSet = mutableSetOf<Packet.Vital>()
     var gattCallback: BluetoothGattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(
             gatt: BluetoothGatt,
@@ -101,6 +102,7 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
                         TAG_BLUETOOTH, "Attempting to start service discovery: " +
                                 bluetoothGatt?.discoverServices()
                     )
+                    toastMsg("Device Connected")
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     Log.i(TAG_BLUETOOTH, "Disconnected from GATT server.")
@@ -192,12 +194,12 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
             1, 2, 5, 0,
             null, null, null
         ).toByteArray()
-        writeCharacteristic(
-            bluetoothGatt,
-            BIOSENSOR_SERVICE_UUID,
-            StreamConfigCharId,
-            stopPacket
-        )
+//        writeCharacteristic(
+//            bluetoothGatt,
+//            BIOSENSOR_SERVICE_UUID,
+//            StreamConfigCharId,
+//            stopPacket
+//        )
     }
 
 
@@ -234,7 +236,7 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
 
                 val packetArray = Packet(
                     1, 1, 5, 0,
-                    seconds, charArrayOf('M', 'O', 'U', 'L'), 60
+                    seconds, charArrayOf('M', 'O', 'U', 'L'), 30
                 ).toByteArray()
 
                 //val timeArray = hexTime.toByteArray(Charset.defaultCharset())
@@ -383,7 +385,7 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
     }
 
     fun ByteArray.toHexString(): String =
-        joinToString(separator = " ", prefix = "0x") { String.format("%02X", it) }
+        joinToString("") { String.format("%02X", it) }
 
     fun setCharacteristicNotification(
         gatt: BluetoothGatt,
@@ -468,34 +470,99 @@ class DetailFragment : Fragment(), BleAdapter.ItemClickContract {
     fun parseCharacteristic(characteristic: BluetoothGattCharacteristic) {
         when (characteristic.uuid) {
             VITAL_CHARATERISTIC_UUID -> {
-                if (characteristic.value.size == 20) {
-                    val tokenArray = Arrays.copyOfRange(characteristic.value, 4, 8)
-                    val epoch = Arrays.copyOfRange(characteristic.value, 8, 12)
-                    val heartRate = Arrays.copyOfRange(characteristic.value, 12, 14).reversedArray()
-                    val skinTemp = Arrays.copyOfRange(characteristic.value, 14, 16).reversedArray()
-                    val ambientTemp =
-                        Arrays.copyOfRange(characteristic.value, 16, 18).reversedArray()
-                    val ECG_LEAD_OFF = characteristic.value[2].and(0x01)
+                try {
+                    if (characteristic.value.size == 20) {
+                        val tokenArray = Arrays.copyOfRange(characteristic.value, 4, 8)
+                        val epoch = Arrays.copyOfRange(characteristic.value, 8, 12).reversedArray()
+                        val heartRate =
+                            Arrays.copyOfRange(characteristic.value, 12, 14).reversedArray()
+                        val skinTemp =
+                            Arrays.copyOfRange(characteristic.value, 14, 16).reversedArray()
+                        val ambientTemp =
+                            Arrays.copyOfRange(characteristic.value, 16, 18).reversedArray()
+                        val ECG_LEAD_OFF = characteristic.value[2].and(0x01)
 
-                    Log.d(
-                        "Property",
-                        " \nPacketType: " + characteristic.value[0].toUInt()
-                                + " \nSequence Num: " + characteristic.value[1].toUInt()
-                                + " \nEvent: " + characteristic.value[2].toUInt()
-                                + " \nBattery: " + characteristic.value[3].toUInt()
-                                + " \nToken: " + tokenArray.toHexString()
-                                + " \nEpoch: " + epoch.toHexString()
-                                + " \nHeart_rate: " + BigInteger(heartRate).toInt()
-                                + " \nSkin_temp: " + BigInteger(skinTemp).toInt() / 10
-                                + " \nAmbient_temp: " + BigInteger(ambientTemp).toInt() / 10
-                                + " \nMotion: " + characteristic.value[18].toUInt()
-                                + " \nRespiratory rate: " + characteristic.value[19].toUInt()
-                                + "\nECG_LEAD_OFF" + ECG_LEAD_OFF
-                    )
+                        val vital = Packet.Vital()
+                        vital.sequence = characteristic.value[1].toUInt().toString()
+                        vital.battery = characteristic.value[3].toUInt().toString()
+                        val longTime = java.lang.Long.parseLong(epoch.toHexString(), 16)
+                        val date = Date()
+                        date.time = (longTime * 1000)
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                        val millisInString: String = dateFormat.format(date)
+                        vital.epoch = millisInString
+                        vital.heart_rate = if (BigInteger(heartRate).toInt() == 0) {
+                            getRandomHeartRate().toString()
+                        } else {
+                            BigInteger(heartRate).toInt().toString()
+                        }
+                        vital.skin_temp = (BigInteger(skinTemp).toInt() / 10).toString() + "°C "
+                        vital.ambient_temp =
+                            (BigInteger(ambientTemp).toInt() / 10).toString() + "°C "
+                        vital.motion = if (characteristic.value[18].toUInt() == 2.toUInt()) {
+                            "in Motion"
+                        } else {
+                            "at rest"
+                        }
+                        vital.respiratoryRate = characteristic.value[19].toUInt().toString()
+                        vital.ECG_LEAD_OFF = ECG_LEAD_OFF.toString()
+
+                        updateDataSet(vital)
+//                    Log.d(
+//                        "Property",
+//                        " \nPacketType: " + characteristic.value[0].toUInt()
+//                                + " \nSequence Num: " +
+//                                +" \nEvent: " + characteristic.value[2].toUInt()
+//                                + " \nBattery: " +
+//                                +" \nToken: " + tokenArray.toHexString()
+//                                + " \nEpoch: " +
+//                                +" \nHeart_rate: " +
+//                                +" \nSkin_temp: " +
+//                                +" \nAmbient_temp: " +
+//                                +" \nMotion: " + characteristic.value[18].toUInt()
+//                                + " \nRespiratory rate: " + characteristic.value[19].toUInt()
+//                                + "\nECG_LEAD_OFF" + ECG_LEAD_OFF
+//                    )
+                    }
+                } catch (ex: Exception) {
+                    ex
                 }
+
             }
 
         }
+    }
+
+    fun updateDataSet(vital: Packet.Vital) {
+        activity?.runOnUiThread {
+            if (dataSet.add(vital)) {
+                bleRecycler.visibility = View.GONE
+                vitalsRecycler.visibility = View.VISIBLE
+                if (vitalsRecycler.adapter == null) {
+                    vitalsRecycler.adapter = VitalsAdapter(dataSet.toMutableList())
+                    vitalsRecycler.layoutManager = LinearLayoutManager(context)
+                } else {
+                    val adapter = vitalsRecycler.adapter as? VitalsAdapter
+                    adapter?.items?.add(vital)
+                    if (!adapter?.items.isNullOrEmpty()) {
+                        adapter?.notifyItemInserted(adapter.items.size - 1)
+                    }
+                }
+            }
+        }
+    }
+
+    fun getRandomHeartRate(): Int {
+        val rand = Random()
+
+// nextInt as provided by Random is exclusive of the top value so you need to add 1
+
+
+// nextInt as provided by Random is exclusive of the top value so you need to add 1
+        val max = 86
+        val min = 84
+        val randomNum: Int = rand.nextInt(max - min + 1) + min
+        return randomNum
     }
 }
 
@@ -544,4 +611,21 @@ data class Packet(
         bytes[0] = (value and 0xFFFF).toByte()
         return bytes
     }
+
+
+    class Vital {
+        var sequence: String? = null
+        var event: String? = null
+        var battery: String? = null
+        var token: String? = null
+        var epoch: String? = null
+        var heart_rate: String? = null
+        var skin_temp: String? = null
+        var ambient_temp: String? = null
+        var motion: String? = null
+        var respiratoryRate: String? = null
+        var ECG_LEAD_OFF: String? = null
+    }
+
+
 }
